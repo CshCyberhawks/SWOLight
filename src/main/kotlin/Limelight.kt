@@ -1,48 +1,19 @@
 package cshcyberhawks.swolight.limelight
 
+import edu.wpi.first.networktables.NetworkTable
 import edu.wpi.first.networktables.NetworkTableInstance
 import kotlin.math.tan
 
-class Limelight {
-    private val limelight = NetworkTableInstance.getDefault().getTable("limelight")
+class Limelight(name: String, ledMode: LedMode = LedMode.Pipeline, cameraMode: CameraMode = CameraMode.VisionProcessor, pipeline: Int = 0, streamMode: StreamMode = StreamMode.Standard, snapshotMode: SnapshotMode = SnapshotMode.Reset, crop: Array<Number> = arrayOf(0, 0, 0, 0)) {
+    private val limelight: NetworkTable
 
-    /**
-     * A class for helping with built in TalonFX Drive Encoders.
-     *
-     * @property ledMode Sets limelight's current state: 0 = use the LED mode set in the current pipeline, 1 =
-     * force off, 2 = force blink, 3 = force on.
-     *
-     * @property camMode Sets limelight's operation mode: 0 = Vision processor, 1 = Driver Camera (Increases exposure,
-     * disables vision processing).
-     *
-     * @property pipeline Sets limelight's current pipeline: 0..9
-     *
-     * @property stream Sets limelight's streaming mode: 0 = Standard - Side-by-side streams if a webcam is attached
-     * to Limelight, 1 = PiP Main - The secondary camera stream is placed in the lower-right corner of the primary
-     * camera stream, 2 = PiP Secondary - The primary camera stream is placed in the lower-right corner of the
-     * secondary camera stream.
-     *
-     * @property snapshot Allows users to take snapshots during a match: 0 = Reset snapshot mode, 1 = Take exactly
-     * one snapshot.
-     *
-     * @property crop Sets the crop rectangle. The pipeline must utilize the default crop rectangle in the web
-     * interface. The array must have exactly 4 entries.
-     *
-     * @constructor Gets the ledMode, camMode, pipeline, stream, snapshot, and crop.
-     */
-    constructor(
-        ledMode: LedMode = LedMode.Pipeline,
-        cameraMode: CameraMode = CameraMode.VisionProcessor,
-        pipeline: Int = 0,
-        streamMode: StreamMode = StreamMode.Standard,
-        snapshotMode: SnapshotMode = SnapshotMode.Reset,
-        crop: Array<Number> = arrayOf(0, 0, 0, 0)
-    ) {
+    init {
         if (pipeline < 0 || pipeline > 9)
             error("Invalid pipeline value")
         else if (crop.size != 4)
             error("Invalid crop array")
 
+        limelight = NetworkTableInstance.getDefault().getTable(name)
         limelight.getEntry("ledMode").setNumber(ledMode.ordinal)
         limelight.getEntry("camMode").setNumber(cameraMode.ordinal)
         limelight.getEntry("pipeline").setNumber(pipeline)
@@ -87,11 +58,21 @@ class Limelight {
 
     fun getTarget3D(): Array<Number> = limelight.getEntry("camtran").getNumberArray(arrayOf<Number>())
 
+    fun getTargetID(): Double = limelight.getEntry("tid").getDouble(0.0)
+
+    fun getJSON(): ByteArray = limelight.getEntry("json").getRaw(byteArrayOf())
+
+    fun getBotPose(): Array<Number> = limelight.getEntry("botpose").getNumberArray(arrayOf<Number>())
+
+    fun getDetectorClass(): Double = limelight.getEntry("tclass").getDouble(0.0)
+
+    fun getColorUnderCrosshair(): Array<Number> = limelight.getEntry("tc").getNumberArray(arrayOf<Number>())
+
     /**
      * @return Distance from target (meters).
      */
     fun findTargetDistance(cameraHeight: Double, cameraAngle: Double, ballHeight: Double): Double =
-        if (hasTarget()) (cameraHeight - ballHeight) * tan(Math.toRadians(getVerticalOffset() + cameraAngle)) else -1.0
+            if (hasTarget()) (cameraHeight - ballHeight) * tan(Math.toRadians(getVerticalOffset() + cameraAngle)) else -1.0
 
     fun getColor(): Array<Number> = limelight.getEntry("tc").getNumberArray(arrayOf(-1))
 }
