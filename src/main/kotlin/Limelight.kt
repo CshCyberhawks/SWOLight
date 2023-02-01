@@ -4,7 +4,8 @@ import edu.wpi.first.networktables.NetworkTable
 import edu.wpi.first.networktables.NetworkTableInstance
 import kotlin.math.tan
 
-class Limelight(name: String, ledMode: LedMode = LedMode.Pipeline, cameraMode: CameraMode = CameraMode.VisionProcessor, pipeline: Int = 0, streamMode: StreamMode = StreamMode.Standard, snapshotMode: SnapshotMode = SnapshotMode.Reset, crop: Array<Number> = arrayOf(0, 0, 0, 0)) {
+
+abstract class Limelight(name: String, ledMode: LedMode = LedMode.Pipeline, cameraMode: CameraMode = CameraMode.VisionProcessor, pipeline: Int = 0, streamMode: StreamMode = StreamMode.Standard, snapshotMode: SnapshotMode = SnapshotMode.Reset, crop: Array<Number> = arrayOf(0, 0, 0, 0)) {
     private val limelight: NetworkTable
 
     init {
@@ -62,8 +63,28 @@ class Limelight(name: String, ledMode: LedMode = LedMode.Pipeline, cameraMode: C
 
     fun getJSON(): ByteArray = limelight.getEntry("json").getRaw(byteArrayOf())
 
-    fun getBotPose(): Array<Number> = limelight.getEntry("botpose").getNumberArray(arrayOf<Number>())
-
+    fun getCamPose(): Pose3d? {
+        val default: Array<Double> = arrayOf(0.0,0.0,0.0,0.0,0.0,0.0)
+        val data = camPose.getDoubleArray(default)
+        var pose: Pose3d? = null
+        if (!data.contentEquals(default)) {
+            val translation = Translation3d(data[0], data[1], data[2])
+            val rotation = Rotation3d(data[3], data[4], data[5])
+            pose = Pose3d(translation, rotation)
+        }
+        return pose
+    }
+    fun getBotPose(): Pose3d? {
+        val default: Array<Double> = arrayOf(0.0,0.0,0.0,0.0,0.0,0.0)
+        val data = botpose.getDoubleArray(default)
+        var pose: Pose3d? = null
+        if (!data.contentEquals(default)) {
+            val translation = Translation3d(data[0], data[1], data[2])
+            val rotation = Rotation3d(data[3], data[4], data[5])
+            pose = Pose3d(translation, rotation)
+        }
+        return pose
+    }
     fun getDetectorClass(): Double = limelight.getEntry("tclass").getDouble(0.0)
 
     fun getColorUnderCrosshair(): Array<Number> = limelight.getEntry("tc").getNumberArray(arrayOf<Number>())
